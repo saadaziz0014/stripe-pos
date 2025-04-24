@@ -36,6 +36,7 @@ router.post('/create-payment-intent', async (req, res) => {
             description,
             payment_method_types: ['card_present'],
             capture_method: 'manual', // Required for Terminal payments
+            currency: 'eur'
         });
 
         return res.status(200).json({
