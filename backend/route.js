@@ -36,7 +36,6 @@ router.post('/create-payment-intent', async (req, res) => {
             description,
             payment_method_types: ['card_present'],
             capture_method: 'manual', // Required for Terminal payments
-            currency: 'eur'
         });
 
         return res.status(200).json({
@@ -49,5 +48,29 @@ router.post('/create-payment-intent', async (req, res) => {
     }
 });
 
+router.post('/capture-payment-intent', async (req, res) => {
+    const { paymentIntentId } = req.body;
+
+    try {
+        const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
+        return res.status(200).json(paymentIntent);
+    } catch (error) {
+        console.error('Error capturing PaymentIntent:', error.message);
+        return res.status(500).json({ error: 'Failed to capture PaymentIntent' });
+    }
+});
+
+router.patch('/update-payment-intent', async (req, res) => {
+    const { paymentIntentId, amount } = req.body;
+    try {
+        const paymentIntent = await stripe.paymentIntents.update(paymentIntentId, {
+            amount: parseInt(amount),
+        });
+        return res.status(200).json(paymentIntent);
+    } catch (error) {
+        console.error('Error updating PaymentIntent:', error.message);
+        return res.status(500).json({ error: 'Failed to update PaymentIntent' });
+    }
+});
 
 export default router;
