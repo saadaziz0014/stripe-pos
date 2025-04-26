@@ -9,6 +9,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2023-10-16',
 });
 
+router.get('/', (req, res) => {
+    res.send('Hello World');
+});
+
 router.get('/connection-token', async (req, res) => {
     try {
         const connectionToken = await stripe.terminal.connectionTokens.create();
@@ -34,8 +38,8 @@ router.post('/create-payment-intent', async (req, res) => {
             amount: parseInt(amount), // Amount should already be in cents
             currency,
             description,
-            payment_method_types: ['card_present'],
-            capture_method: 'manual', // Required for Terminal payments
+            payment_method_types: ['card'],
+            capture_method: 'automatic', // Required for Terminal payments
         });
 
         return res.status(200).json({
