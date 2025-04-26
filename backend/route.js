@@ -39,7 +39,8 @@ router.post('/create-payment-intent', async (req, res) => {
             currency,
             description,
             payment_method_types: ['card'],
-            capture_method: 'automatic', // Required for Terminal payments
+            capture_method: 'manual', // Required for Terminal payments
+            confirmation_method: 'manual', // Required for Terminal payments
         });
 
         return res.status(200).json({
@@ -55,17 +56,36 @@ router.post('/create-payment-intent', async (req, res) => {
 router.post('/capture-payment-intent', async (req, res) => {
     const { paymentIntentId } = req.body;
 
+    if (!paymentIntentId) {
+        return res.status(400).json({ error: 'paymentIntentId is required' });
+    }
+
     try {
-        const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
-        return res.status(200).json(paymentIntent);
+        // First retrieve the paymentIntent to check its status
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+        // Check if paymentIntent is ready for capture
+        if (paymentIntent.status !== 'requires_capture') {
+            return res.status(400).json({
+                error: `Cannot capture PaymentIntent with status: ${paymentIntent.status}. Must be 'requires_capture'.`
+            });
+        }
+
+        // Now capture
+        const capturedPaymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
+
+        return res.status(200).json(capturedPaymentIntent);
     } catch (error) {
         console.error('Error capturing PaymentIntent:', error.message);
         return res.status(500).json({ error: 'Failed to capture PaymentIntent' });
     }
 });
 
+
 router.patch('/update-payment-intent', async (req, res) => {
-    const { paymentIntentId, amount } = req.body;
+    let { paymentIntentId, amount } = req.body;
+    amount = parseInt(amount);
+    amount = amount * 100;
     try {
         const paymentIntent = await stripe.paymentIntents.update(paymentIntentId, {
             amount: parseInt(amount),
