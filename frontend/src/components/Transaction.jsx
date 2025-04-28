@@ -6,12 +6,11 @@ const POSInterface = () => {
     const [terminal, setTerminal] = useState(null);
     const [reader, setReader] = useState(null);
 
-    // Initialize Stripe Terminal with simulated: true
+    // Initialize Stripe Terminal
     useEffect(() => {
         const terminalInstance = window.StripeTerminal.create({
             onFetchConnectionToken: async () => {
-                const res = await fetch('http://localhost:3000/api/connection-token');
-                console.log(res, "res");
+                const res = await fetch('http://localhost:3000/api/connection-token'); // Replace with real URL
                 const data = await res.json();
                 return data.secret;
             },
@@ -20,35 +19,39 @@ const POSInterface = () => {
             },
         });
 
-        terminalInstance.setSimulatorConfiguration({ simulated: true });
-
         setTerminal(terminalInstance);
     }, []);
 
-
     const connectReader = async () => {
-        const result = await terminal.discoverReaders({ simulated: true });
+        if (!terminal) return alert('Terminal not initialized');
+
+        const result = await terminal.discoverReaders({
+  device_type: 'bbpos_wisepos_e',
+  method: 'internet',
+});
+
 
         if (result.error) {
             console.error('Failed to discover readers:', result.error);
             alert(result.error.message);
         } else if (result.discoveredReaders.length === 0) {
-            alert('No simulated readers found');
+            alert('No readers found. Make sure the device is on the same Wi-Fi as this browser.');
         } else {
             const connectResult = await terminal.connectReader(result.discoveredReaders[0]);
             if (connectResult.error) {
                 console.error('Failed to connect to reader:', connectResult.error);
+                alert(connectResult.error.message);
             } else {
                 setReader(connectResult.reader);
-                alert(`Connected to reader: ${connectResult.reader.label}`);
+                alert(`✅ Connected to reader: ${connectResult.reader.label}`);
             }
         }
     };
 
     const handleCharge = async () => {
         if (!terminal || !reader) return alert('Connect to a reader first');
-
         if (!amount) return alert('Enter an amount');
+
         setLoading(true);
 
         try {
@@ -61,11 +64,8 @@ const POSInterface = () => {
             const data = await res.json();
 
             if (data.error) throw new Error(data.error);
-            console.log(data, "data");
-            const { client_secret, id } = data;
-            let secret = `${client_secret}`;
 
-            let result = await terminal.collectPaymentMethod(secret);
+            const result = await terminal.collectPaymentMethod(data.client_secret);
             if (result.error) {
                 console.error('Collect payment error:', result.error);
                 alert(result.error.message);
@@ -90,7 +90,7 @@ const POSInterface = () => {
 
     return (
         <div className="flex flex-col items-center justify-center gap-4 h-screen p-4">
-            <h1 className="text-2xl font-bold">Simulated Stripe POS</h1>
+            <h1 className="text-2xl font-bold">SelluxSky POS (Live)</h1>
 
             {!reader && (
                 <button
@@ -125,3 +125,4 @@ const POSInterface = () => {
 };
 
 export default POSInterface;
+

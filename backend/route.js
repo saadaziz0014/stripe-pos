@@ -38,7 +38,7 @@ router.post('/create-payment-intent', async (req, res) => {
             amount: parseInt(amount), // Amount should already be in cents
             currency,
             description,
-            payment_method_types: ['card'],
+            payment_method_types: ['card_present'],
             capture_method: 'manual', // Required for Terminal payments
             confirmation_method: 'manual', // Required for Terminal payments
         });
